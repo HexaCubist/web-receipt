@@ -129,6 +129,9 @@
 						// Create image
 						await new Promise<void>((resolve) => {
 							const img = new Image();
+							if (op.attributes?.width) {
+								img.width = op.attributes.width as number;
+							}
 							img.onload = () => {
 								canvas.width = img.width;
 								canvas.height = img.height;
@@ -138,7 +141,6 @@
 							img.src = (op.insert as { image: string }).image;
 						});
 						// Get image data
-						let image_data_url = canvas.toDataURL('image/jpeg');
 						let image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
 						// Print

@@ -24,12 +24,24 @@
 	$: if (browser)
 		onMount(async () => {
 			const Quill = (await import('quill')).default;
+			// @ts-ignore
+			window.Quill = Quill;
+			// @ts-ignore
+			const ImageResize = (await import('quill-image-resize-module')).default;
+			Quill.register('modules/imageResize', ImageResize);
 			quill = new Quill(edEl, {
 				theme: 'snow',
 				placeholder: 'Compose an epic...',
 
 				modules: {
-					toolbar: [['bold', 'italic', 'underline'], [{ align: [] }], ['image']]
+					toolbar: [
+						['bold', 'italic', 'underline'],
+						[{ align: ['', 'center', 'right'] }],
+						['image']
+					],
+					imageResize: {
+						modules: ['Resize']
+					}
 				}
 			});
 		});
