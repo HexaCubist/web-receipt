@@ -6,7 +6,3 @@
 
 [template]
   incoming-hooks = []
-
-[template.environment]
-  OPENAI_ORG = "Change me to your OpenAI org token"
-  OPENAI_KEY = "Change me to your OpenAI secret key!"

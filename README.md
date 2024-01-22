@@ -9,6 +9,6 @@ To launch your own version of this tool:
 
     - Deploying to Netlify using this button:
 
-      - [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hexacubist/terrible-receipt)
+      - [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/hexacubist/web-receipt)
 
     - Or, clone this repo and run `yarn` and `yarn dev` in the `app` directory.
