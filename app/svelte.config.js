@@ -14,9 +14,6 @@ const config = {
 		adapter: adapter({
 			edge: true
 		})
-	},
-	vitePlugin: {
-		prebundleSvelteLibraries: true
 	}
 };
 
