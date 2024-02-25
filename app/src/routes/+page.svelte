@@ -7,6 +7,9 @@
 	import capabilities, { type SupportedModel } from 'escpos-buffer/dist/capabilities';
 	import { persisted } from 'svelte-persisted-store';
 	import type Quill from 'quill';
+	import { dev } from '$app/environment';
+
+	const capabilityList = (dev ? capabilities : capabilities.default).models.map((m) => m.model);
 
 	let loaded = false;
 	let textToPrint = '';
@@ -208,7 +211,7 @@
 						refreshConnection();
 					}}
 				>
-					{#each capabilities.models.map((m) => m.model) as capability (capability)}
+					{#each capabilityList as capability (capability)}
 						<option value={capability}>{capability}</option>
 					{/each}
 				</select>
