@@ -24,20 +24,6 @@
 	let numCols = persisted<number>('printer-cols', 32);
 	let MaxDPI = persisted<number>('printer-dpi', 384);
 
-	function handleFilesSelect(e) {
-		const { acceptedFiles, _fileRejections } = e.detail;
-		if (!ctx) return;
-		const img = new Image();
-		img.onload = () => {
-			canvas.width = img.width;
-			canvas.height = img.height;
-			ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-			console.log('Loaded image');
-			showFiles = true;
-		};
-		img.src = URL.createObjectURL(acceptedFiles[0]);
-	}
-
 	let printer: Printer | undefined = undefined;
 	let connection: WebUSB | undefined = undefined;
 	const connect = async () => {
@@ -59,48 +45,6 @@
 		loaded = true;
 	};
 	let processing = false;
-	const print = async () => {
-		lines.push(textToPrint);
-		if (!printer) {
-			console.log(textToPrint);
-			return;
-		}
-		try {
-			await printer.withStyle(
-				{
-					// italic: true,
-					bold: true,
-					align: Align.Center
-				},
-				async () => {
-					const wrappedLines = wrap(textToPrint.replaceAll(/[^\x00-\x7F]+/g, ' '), {
-						width: $numCols - 2,
-						trim: true
-					}).split('\n');
-					for (const line of wrappedLines) {
-						await printer!.writeln(line);
-					}
-				}
-			);
-			if (showFiles) {
-				if (!ctx) return;
-				let image_data_url = canvas.toDataURL('image/jpeg');
-				let image_data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-				const image = new EscImage({
-					data: image_data.data as any,
-					width: image_data.width,
-					height: image_data.height
-				});
-				await printer.draw(image);
-			}
-			await printer.feed(3);
-			await printer.cutter();
-			showFiles = false;
-		} catch (error) {
-			console.log("Wow, looks like the printer didn't work!", error);
-			return;
-		}
-	};
 
 	async function processDeltas(detail: lineDiff) {
 		if (!printer) {
@@ -180,14 +124,6 @@
 		processing = false;
 	}
 </script>
-
-<svelte:window
-	on:keydown={(e) => {
-		if ((e.key === 'b' || e.key === 'PageDown') && loaded) {
-			print();
-		}
-	}}
-/>
 
 <main class="receipt receipt-after">
 	<h1>Receipt Printer</h1>
