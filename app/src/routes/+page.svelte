@@ -7,9 +7,11 @@
 	import capabilities, { type SupportedModel } from 'escpos-buffer/dist/capabilities';
 	import { persisted } from 'svelte-persisted-store';
 	import type Quill from 'quill';
-	import { dev } from '$app/environment';
+	import { browser, dev } from '$app/environment';
 
-	const capabilityList = (dev ? capabilities : capabilities.default).models.map((m) => m.model);
+	const capabilityList = (browser || dev ? capabilities : capabilities.default).models.map(
+		(m) => m.model
+	);
 
 	let loaded = false;
 	let textToPrint = '';
