@@ -4,7 +4,10 @@
 	import { fade, slide } from 'svelte/transition';
 	import wrap from 'word-wrap';
 	import Editor, { type lineDiff } from '$lib/Editor.svelte';
+	import capabilities, { type SupportedModel } from 'escpos-buffer/dist/capabilities';
+	import { persisted } from 'svelte-persisted-store';
 	import type Quill from 'quill';
+
 	let loaded = false;
 	let textToPrint = '';
 	let lines: string[] = [];
@@ -12,6 +15,9 @@
 	$: ctx = canvas?.getContext('2d');
 
 	let showFiles = false;
+	let chosenModel = persisted<SupportedModel>('printer-model', 'POS-80');
+	let numCols = persisted<number>('printer-cols', 32);
+	let MaxDPI = persisted<number>('printer-dpi', 384);
 
 	function handleFilesSelect(e) {
 		const { acceptedFiles, _fileRejections } = e.detail;
@@ -28,6 +34,7 @@
 	}
 
 	let printer: Printer | undefined = undefined;
+	let connection: WebUSB | undefined = undefined;
 	const connect = async () => {
 		const device = await navigator.usb.requestDevice({
 			filters: [
@@ -36,9 +43,14 @@
 				// }
 			]
 		});
-		const connection = new WebUSB(device);
-		printer = await Printer.CONNECT('POS-80', connection);
-		await printer.setColumns(32);
+		connection = new WebUSB(device);
+		await refreshConnection();
+	};
+	const refreshConnection = async () => {
+		console.log('Refreshing connection');
+		if (!connection) return;
+		printer = await Printer.CONNECT($chosenModel, connection);
+		await printer.setColumns($numCols);
 		loaded = true;
 	};
 	let processing = false;
@@ -57,7 +69,7 @@
 				},
 				async () => {
 					const wrappedLines = wrap(textToPrint.replaceAll(/[^\x00-\x7F]+/g, ' '), {
-						width: 30,
+						width: $numCols - 2,
 						trim: true
 					}).split('\n');
 					for (const line of wrappedLines) {
@@ -129,12 +141,15 @@
 						// Create image
 						await new Promise<void>((resolve) => {
 							const img = new Image();
-							if (op.attributes?.width) {
-								img.width = op.attributes.width as number;
-							}
+							let scaleFactor = 1;
 							img.onload = () => {
-								canvas.width = img.width;
-								canvas.height = img.height;
+								if (op.attributes?.width) {
+									scaleFactor =
+										Math.min($MaxDPI || 384, parseInt(op.attributes.width.toString())) /
+										img.naturalWidth;
+								}
+								canvas.width = img.naturalWidth * scaleFactor;
+								canvas.height = img.naturalHeight * scaleFactor;
 								ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
 								resolve();
 							};
@@ -175,17 +190,56 @@
 		Welcome to a web-based receipt printer! Press the button below to connect, and then enter what
 		you'd like printed
 	</p>
-	<div class="pt-3 flex flex-wrap gap-3 justify-center">
-		<button
-			on:click={() => {
-				connect();
-			}}>Connect to printer</button
-		>
-		<button
-			on:click={() => {
-				loaded = true;
-			}}>Skip</button
-		>
+	<div class="pt-3 flex flex-wrap items-end gap-3 justify-center">
+		{#if !loaded}
+			<button
+				on:click={() => {
+					connect();
+				}}>Connect to printer</button
+			>
+		{/if}
+		<div class="flex gap-3 flex-nowrap">
+			<label class="input-label">
+				<span class="text-gray-700"> Model </span>
+				<select
+					class="form-select px-4 py-3 rounded-full"
+					bind:value={$chosenModel}
+					on:change={() => {
+						refreshConnection();
+					}}
+				>
+					{#each capabilities.models.map((m) => m.model) as capability (capability)}
+						<option value={capability}>{capability}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="input-label">
+				<span class="text-gray-700"> Number of Columns </span>
+
+				<input
+					type="number"
+					bind:value={$numCols}
+					placeholder="Cols..."
+					title="Number of Columns"
+					on:change={() => {
+						refreshConnection();
+					}}
+				/>
+			</label>
+			<label class="input-label">
+				<span class="text-gray-700"> Max DPI </span>
+
+				<input
+					type="number"
+					bind:value={$MaxDPI}
+					placeholder="384"
+					title="Max DPI (default 384)"
+					on:change={() => {
+						refreshConnection();
+					}}
+				/>
+			</label>
+		</div>
 	</div>
 	{#if processing}
 		<div
@@ -257,11 +311,17 @@
 	main {
 		@apply mt-16;
 	}
-	button,
-	.button {
+	button {
 		@apply rounded bg-black bg-opacity-100 px-4 py-2 font-bold text-white transition;
 		&:hover {
 			@apply bg-opacity-70;
+		}
+	}
+	.input-label {
+		@apply block shrink;
+		& input,
+		& select {
+			@apply block rounded px-4 py-3;
 		}
 	}
 </style>

@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-	import type { default as Delta, AttributeMap } from 'quill-delta';
+	import { default as Delta, type AttributeMap } from 'quill-delta';
 	export { Delta, AttributeMap };
 
 	export type lineDiff = {
@@ -16,6 +16,21 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	let edEl: HTMLDivElement;
 	let quill: Quill;
+
+	// https://stackoverflow.com/a/57036704
+	// Store accumulated changes
+	var change = new Delta();
+
+	// Save periodically
+	setInterval(function () {
+		if (change.length() > 0) {
+			console.log('Saving changes', change);
+			// Save the entire updated text to localStorage
+			const data = JSON.stringify(quill.getContents());
+			localStorage.setItem('storedText', data);
+			change = new Delta();
+		}
+	}, 5 * 1000);
 
 	const dispatch = createEventDispatcher<{
 		print: lineDiff;
@@ -43,6 +58,14 @@
 						modules: ['Resize']
 					}
 				}
+			});
+			// Load the stored text
+			const storedText = localStorage.getItem('storedText');
+			if (storedText) {
+				quill.setContents(JSON.parse(storedText));
+			}
+			quill.on('text-change', function (delta) {
+				change = change.compose(delta);
 			});
 		});
 	const print = () => {
